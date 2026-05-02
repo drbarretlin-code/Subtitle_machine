@@ -4,7 +4,7 @@ import './App.css';
 function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [subtitles, setSubtitles] = useState([]);
-  const [status, setStatus] = useState('等待連線...');
+  const [status, setStatus] = useState('等待連線');
   const [inputLang, setInputLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('繁體中文');
   const socketRef = useRef(null);
@@ -13,29 +13,59 @@ function App() {
   const streamRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // 自動滾動到底部 (右側)
+  useEffect(() => {
+    const socket = new WebSocket('ws://localhost:8000/ws/audio');
+    socket.binaryType = 'arraybuffer';
+    
+    socket.onopen = () => {
+      setStatus('已連接伺服器');
+      socket.send(JSON.stringify({ 
+        type: 'config', 
+        inputLang, 
+        targetLang 
+      }));
+    };
+    
+    socket.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setSubtitles(prev => {
+          const index = prev.findIndex(s => s.id === data.id);
+          if (index !== -1) {
+            const newSubtitles = [...prev];
+            newSubtitles[index] = data;
+            return newSubtitles;
+          } else {
+            return [...prev, data];
+          }
+        });
+      } catch (err) {
+        console.error("解析伺服器訊息失敗:", err);
+      }
+    };
+    
+    socket.onclose = () => setStatus('連線中斷');
+    socket.onerror = () => setStatus('連線錯誤');
+    socketRef.current = socket;
+
+    return () => socket.close();
+  }, []);
+
+  useEffect(() => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ 
+        type: 'config', 
+        inputLang, 
+        targetLang 
+      }));
+    }
+  }, [inputLang, targetLang]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
   }, [subtitles]);
-
-  useEffect(() => {
-    // 初始化 WebSocket
-    const ws = new WebSocket('ws://localhost:8000/ws/audio');
-    ws.onopen = () => setStatus('已連接伺服器');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setSubtitles((prev) => [...prev, data]);
-    };
-    ws.onclose = () => setStatus('連線已中斷');
-    ws.onerror = () => setStatus('連線發生錯誤');
-    socketRef.current = ws;
-
-    return () => {
-      ws.close();
-    };
-  }, []);
 
   const startRecording = async () => {
     try {
@@ -51,11 +81,6 @@ function App() {
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-          socketRef.current.send(JSON.stringify({ 
-            type: 'config', 
-            inputLang, 
-            targetLang 
-          }));
           socketRef.current.send(inputData.buffer);
         }
       };
@@ -65,10 +90,10 @@ function App() {
       processorRef.current = processor;
       
       setIsRecording(true);
-      setStatus('正在監聽中...');
+      setStatus('正在監聽中');
     } catch (err) {
       console.error('無法啟動錄音:', err);
-      setStatus('錄音權限遭拒或不支援');
+      setStatus('權限遭拒');
     }
   };
 
@@ -83,7 +108,7 @@ function App() {
       audioContextRef.current.close();
     }
     setIsRecording(false);
-    setStatus('已停止監聽');
+    setStatus('已停止');
   };
 
   return (
@@ -93,34 +118,31 @@ function App() {
           <select value={inputLang} onChange={(e) => setInputLang(e.target.value)}>
             <option value="auto">🎤 自動辨識</option>
             <option value="zh">繁體中文</option>
-            <option value="en">英文 (English)</option>
-            <option value="ja">日文 (日本語)</option>
-            <option value="ko">韓文 (한국어)</option>
-            <option value="th">泰文 (ไทย)</option>
-            <option value="id">印尼文 (Bahasa Indonesia)</option>
-            <option value="vi">越南文 (Tiếng Việt)</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
           </select>
-          <span>→</span>
+          <span style={{color: 'rgba(255,255,255,0.3)', fontSize: '12px'}}>➔</span>
           <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
             <option value="繁體中文">繁體中文</option>
             <option value="英文">英文</option>
             <option value="日文">日文</option>
             <option value="韓文">韓文</option>
-            <option value="泰文">泰文</option>
-            <option value="印尼文">印尼文</option>
-            <option value="越南文">越南文</option>
           </select>
         </div>
-        <div className="status-badge">{status}</div>
+        <div className="status-badge">
+          <div className={`status-dot ${isRecording ? 'active' : ''}`}></div>
+          {status}
+        </div>
       </header>
 
       <main className="subtitle-viewport" ref={scrollRef}>
         <div className="subtitle-list-horizontal">
           {subtitles.length === 0 && (
-            <div className="empty-state">等待語音輸入...</div>
+            <div className="empty-state">READY TO CAPTURE</div>
           )}
           {subtitles.map((sub, index) => (
-            <div key={index} className="subtitle-item-inline">
+            <div key={sub.id || index} className="subtitle-item-inline">
               <span className="refined-text">{sub.refined}</span>
             </div>
           ))}
@@ -132,7 +154,7 @@ function App() {
           className={`record-btn ${isRecording ? 'recording' : ''}`}
           onClick={isRecording ? stopRecording : startRecording}
         >
-          {isRecording ? 'STOP' : 'START'}
+          {isRecording ? 'STOP' : 'START SESSION'}
         </button>
       </footer>
     </div>

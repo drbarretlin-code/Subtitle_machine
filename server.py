@@ -1,94 +1,73 @@
 import os
 import asyncio
+import json
+import uuid
 import numpy as np
-import torch
-import google.generativeai as genai
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from faster_whisper import WhisperModel
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# --- 配置 ---
-GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("VITE_GEMINI_KEY")
-WHISPER_MODEL_SIZE = "small"  # 已由 'base' 改為 'small' 以提升辨識率
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
-
-# 初始化 Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-else:
-    print("警告: 未偵測到 GOOGLE_API_KEY，校正功能將失效。")
-    gemini_model = None
-
-# 初始化 Whisper
-print(f"正在載入 Whisper 模型 ({WHISPER_MODEL_SIZE}) 於 {DEVICE}...")
-whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=DEVICE, compute_type=COMPUTE_TYPE)
-
-# 初始化 Silero VAD
-print("正在載入 Silero VAD 模型...")
-vad_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad', model='silero_vad', force_reload=False)
-(get_speech_timestamps, save_audio, read_audio, VADIterator, collect_chunks) = utils
+from backend.audio_engine import audio_engine
+from backend.subtitle_engine import subtitle_engine
+from backend.chunker import VADChunker
 
 app = FastAPI()
 
-class SubtitleEngine:
-    def __init__(self, gemini_client):
-        self.gemini_client = gemini_client
+class SubtitleCoordinator:
+    def __init__(self):
+        self.context_history = collections.deque(maxlen=5)
 
-    async def refine_text(self, raw_text, language="auto", target_lang="繁體中文"):
-        """使用 Gemini 1.5 Flash 進行口音校正與目標語系翻譯"""
-        if not self.gemini_client or not raw_text.strip():
-            return raw_text
-
-        prompt = (
-            f"你是一位極致專業的『即時直播字幕官』。\n"
-            f"當前偵測語系: {language}\n"
-            f"目標輸出語系: {target_lang}\n\n"
-            f"任務：\n"
-            f"1. 修正語音辨識 (ASR) 可能產生的破碎文字或同音異字錯誤。\n"
-            f"2. 將其轉化為極其自然、地道的「{target_lang}」字幕。\n"
-            f"3. 輸出必須簡潔 (Concise)，移除口語贅詞 (如: 嗯、那個、然後)。\n"
-            f"4. **嚴禁解釋**，僅輸出最終字幕文字。\n\n"
-            f"待處理文字: {raw_text}"
-        )
-
+    async def process_segment(self, websocket, audio_data, config):
         try:
-            response = await asyncio.to_thread(
-                self.gemini_client.generate_content, 
-                prompt
+            # 1. ASR 辨識
+            input_lang = None if config["inputLang"] == "auto" else config["inputLang"]
+            raw_text, lang = await audio_engine.transcribe(audio_data, input_lang)
+            
+            if not raw_text.strip() or len(raw_text) < 2:
+                return
+
+            print(f"🎤 ASR: [{raw_text}]")
+            
+            # 2. 翻譯與校正
+            context_str = " | ".join(self.context_history)
+            refined_text = await subtitle_engine.refine_text(
+                raw_text, 
+                context=context_str, 
+                target_lang=config["targetLang"]
             )
-            return response.text.strip()
+            
+            print(f"✨ 翻譯: [{refined_text}]")
+            
+            # 3. 更新上下文並發送
+            self.context_history.append(refined_text)
+            
+            await websocket.send_json({
+                "id": str(uuid.uuid4()),
+                "raw": raw_text,
+                "refined": refined_text,
+                "language": lang,
+                "timestamp": asyncio.get_event_loop().time()
+            })
+            
         except Exception as e:
-            print(f"Gemini 校正失敗: {e}")
-            return raw_text
+            print(f"❌ 處理片段失敗: {e}")
 
-    def transcribe(self, audio_data, language=None):
-        """執行 ASR 辨識"""
-        # 指定 language 可提升特定語系的辨識率與速度
-        segments, info = whisper_model.transcribe(audio_data, beam_size=5, language=language)
-        text = "".join([s.text for s in segments])
-        return text, info.language
-
-engine = SubtitleEngine(gemini_model)
+import collections
 
 @app.websocket("/ws/audio")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("WebSocket 已連接")
+    print("🔌 WebSocket 已連接 (進階架構)")
     
-    audio_buffer = []
+    chunker = VADChunker()
+    coordinator = SubtitleCoordinator()
     current_config = {"inputLang": "auto", "targetLang": "繁體中文"}
     
     try:
         while True:
-            # 接收數據 (可能是 JSON 或 Bytes)
             message = await websocket.receive()
             
+            if message.get("type") == "websocket.disconnect":
+                break
+
             if "text" in message:
-                import json
                 data = json.loads(message["text"])
                 if data.get("type") == "config":
                     current_config.update(data)
@@ -96,43 +75,23 @@ async def websocket_endpoint(websocket: WebSocket):
             
             if "bytes" in message:
                 audio_chunk = np.frombuffer(message["bytes"], dtype=np.float32)
-                audio_buffer.append(audio_chunk)
-
-            # 當緩衝累積到一定量進行 VAD 與辨識
-            if len(audio_buffer) >= 10: # 約 1.2 秒
-                full_audio = np.concatenate(audio_buffer)
+                chunker.add_audio(audio_chunk)
                 
-                # VAD 偵測
-                audio_tensor = torch.from_numpy(full_audio)
-                speech_timestamps = get_speech_timestamps(audio_tensor, vad_model, sampling_rate=16000)
-                
-                # 觸發辨識 (增加到約 3.5 - 4 秒，提供更多上下文以提升準確度)
-                if len(audio_buffer) >= 25: 
-                    raw_audio = np.concatenate(audio_buffer)
-                    print(f"正在辨識音訊 (長度: {len(raw_audio)} samples)...")
-                    
-                    # 使用設定的輸入語系
-                    input_lang = None if current_config["inputLang"] == "auto" else current_config["inputLang"]
-                    text, lang = engine.transcribe(raw_audio, language=input_lang)
-                    
-                    if text.strip():
-                        print(f"辨識結果: {text} ({lang})")
-                        # 傳入目標語系進行校正與翻譯
-                        refined_text = await engine.refine_text(text, lang, target_lang=current_config["targetLang"])
-                        print(f"Gemini 校正: {refined_text}")
-                        await websocket.send_json({
-                            "raw": text,
-                            "refined": refined_text,
-                            "language": lang
-                        })
-                    
-                    audio_buffer = [] # 重置緩衝區
+                # 取得可處理的音訊段
+                segment = chunker.get_next_segment()
+                if segment is not None:
+                    # 非同步處理，不阻塞接收循環
+                    asyncio.create_task(coordinator.process_segment(websocket, segment, current_config))
 
     except WebSocketDisconnect:
-        print("WebSocket 已斷開")
+        print("❌ WebSocket 已斷開")
     except Exception as e:
-        print(f"錯誤: {e}")
-        await websocket.close()
+        print(f"‼️ WebSocket 錯誤: {e}")
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
 
 if __name__ == "__main__":
     import uvicorn
