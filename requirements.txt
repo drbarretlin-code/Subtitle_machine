@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+websockets
 faster-whisper
 onnxruntime
 google-generativeai

@@ -1,155 +1,109 @@
 :root {
-  --bg-color: #0f172a;
-  --panel-bg: rgba(30, 41, 59, 0.7);
+  --bg-color: #000000;
+  --panel-bg: rgba(20, 20, 20, 0.9);
   --accent-color: #38bdf8;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --danger-color: #ef4444;
+  --text-main: #ffffff;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
-  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: transparent; /* 方便去背 */
+  overflow: hidden;
 }
 
 .container {
+  width: 450px;
+  height: 240px;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
+  background: var(--panel-bg);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
   box-sizing: border-box;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 5px;
 }
 
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
-  background: linear-gradient(to right, #38bdf8, #8b5cf6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+select {
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 5px;
 }
 
 .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: var(--panel-bg);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.8rem;
+  font-size: 10px;
   color: var(--accent-color);
 }
 
 .subtitle-viewport {
   flex: 1;
-  overflow-y: auto;
-  background: var(--panel-bg);
-  backdrop-filter: blur(12px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 30px;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  scroll-behavior: smooth;
 }
 
-.subtitle-list {
-  display: flex;
-  flex-direction: column;
+/* 隱藏滾動條但保留功能 */
+.subtitle-viewport::-webkit-scrollbar {
+  height: 4px;
+}
+.subtitle-viewport::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+}
+
+.subtitle-list-horizontal {
+  display: inline-flex;
   gap: 20px;
+  padding-right: 100px; /* 預留右側空間 */
 }
 
-.empty-state {
-  text-align: center;
-  color: var(--text-muted);
-  margin-top: 40px;
-  font-style: italic;
-}
-
-.subtitle-item {
-  display: flex;
-  gap: 15px;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.lang-tag {
-  background: rgba(56, 189, 248, 0.1);
-  color: var(--accent-color);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  height: fit-content;
-  border: 1px solid rgba(56, 189, 248, 0.2);
-}
-
-.content {
-  flex: 1;
-}
-
-.raw-text {
-  margin: 0 0 5px 0;
-  font-size: 0.9rem;
-  color: var(--text-muted);
+.subtitle-item-inline {
+  display: inline-block;
 }
 
 .refined-text {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: 600;
   color: var(--text-main);
-  line-height: 1.6;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .footer {
   display: flex;
-  justify-content: center;
-  padding: 10px;
+  justify-content: flex-end;
+  margin-top: 5px;
 }
 
 .record-btn {
-  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  background: #333;
   color: white;
   border: none;
-  padding: 16px 40px;
-  border-radius: 50px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 5px 15px;
+  border-radius: 4px;
+  font-size: 10px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
-}
-
-.record-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
 }
 
 .record-btn.recording {
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+  background: #ef4444;
 }

@@ -5,10 +5,20 @@ function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [subtitles, setSubtitles] = useState([]);
   const [status, setStatus] = useState('等待連線...');
+  const [inputLang, setInputLang] = useState('auto');
+  const [targetLang, setTargetLang] = useState('繁體中文');
   const socketRef = useRef(null);
   const audioContextRef = useRef(null);
   const processorRef = useRef(null);
   const streamRef = useRef(null);
+  const scrollRef = useRef(null);
+
+  // 自動滾動到底部 (右側)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [subtitles]);
 
   useEffect(() => {
     // 初始化 WebSocket
@@ -36,11 +46,16 @@ function App() {
       audioContextRef.current = audioContext;
       
       const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      const processor = audioContext.createScriptProcessor(2048, 1, 1);
       
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({ 
+            type: 'config', 
+            inputLang, 
+            targetLang 
+          }));
           socketRef.current.send(inputData.buffer);
         }
       };
@@ -74,22 +89,33 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1>AI 多語系即時字幕機</h1>
+        <div className="controls">
+          <select value={inputLang} onChange={(e) => setInputLang(e.target.value)}>
+            <option value="auto">自動辨識</option>
+            <option value="zh">中文</option>
+            <option value="en">英文</option>
+            <option value="ja">日文</option>
+            <option value="ko">韓文</option>
+            <option value="th">泰文</option>
+          </select>
+          <span>→</span>
+          <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
+            <option value="繁體中文">繁體中文</option>
+            <option value="英文">英文</option>
+            <option value="日文">日文</option>
+          </select>
+        </div>
         <div className="status-badge">{status}</div>
       </header>
 
-      <main className="subtitle-viewport">
-        <div className="subtitle-list">
+      <main className="subtitle-viewport" ref={scrollRef}>
+        <div className="subtitle-list-horizontal">
           {subtitles.length === 0 && (
-            <div className="empty-state">準備就緒，請按開始進行辨識...</div>
+            <div className="empty-state">等待說話...</div>
           )}
           {subtitles.map((sub, index) => (
-            <div key={index} className="subtitle-item">
-              <div className="lang-tag">{sub.language.toUpperCase()}</div>
-              <div className="content">
-                <p className="raw-text">{sub.raw}</p>
-                <p className="refined-text">{sub.refined}</p>
-              </div>
+            <div key={index} className="subtitle-item-inline">
+              <span className="refined-text">{sub.refined}</span>
             </div>
           ))}
         </div>
@@ -100,7 +126,7 @@ function App() {
           className={`record-btn ${isRecording ? 'recording' : ''}`}
           onClick={isRecording ? stopRecording : startRecording}
         >
-          {isRecording ? '停止監聽' : '開始監聽'}
+          {isRecording ? 'STOP' : 'START'}
         </button>
       </footer>
     </div>

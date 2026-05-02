@@ -53,6 +53,9 @@ python3 server.py
 
 ### 步驟 B：開啟使用者介面
 開啟第二個終端機視窗，進入專案目錄執行：
+```專案目錄
+cd /Users/barretlin/Antigravity/Subtitle＿machine
+```
 ```bash
 cd frontend && npm run dev
 ```
