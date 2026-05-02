@@ -14,41 +14,59 @@ function App() {
   const scrollRef = useRef(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8000/ws/audio');
-    socket.binaryType = 'arraybuffer';
-    
-    socket.onopen = () => {
-      setStatus('已連接伺服器');
-      socket.send(JSON.stringify({ 
-        type: 'config', 
-        inputLang, 
-        targetLang 
-      }));
-    };
-    
-    socket.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setSubtitles(prev => {
-          const index = prev.findIndex(s => s.id === data.id);
-          if (index !== -1) {
-            const newSubtitles = [...prev];
-            newSubtitles[index] = data;
-            return newSubtitles;
-          } else {
-            return [...prev, data];
-          }
-        });
-      } catch (err) {
-        console.error("解析伺服器訊息失敗:", err);
-      }
-    };
-    
-    socket.onclose = () => setStatus('連線中斷');
-    socket.onerror = () => setStatus('連線錯誤');
-    socketRef.current = socket;
+    let socket;
+    let reconnectTimeout;
 
-    return () => socket.close();
+    const connect = () => {
+      socket = new WebSocket('ws://localhost:8000/ws/audio');
+      socket.binaryType = 'arraybuffer';
+      
+      socket.onopen = () => {
+        setStatus('已連接伺服器');
+        socket.send(JSON.stringify({ 
+          type: 'config', 
+          inputLang, 
+          targetLang 
+        }));
+      };
+      
+      socket.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          setSubtitles(prev => {
+            const index = prev.findIndex(s => s.id === data.id);
+            if (index !== -1) {
+              const newSubtitles = [...prev];
+              newSubtitles[index] = data;
+              return newSubtitles;
+            } else {
+              return [...prev, data];
+            }
+          });
+        } catch (err) {
+          console.error("解析伺服器訊息失敗:", err);
+        }
+      };
+      
+      socket.onclose = () => {
+        setStatus('連線中斷，嘗試重新連線...');
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
+      
+      socket.onerror = () => {
+        setStatus('連線錯誤');
+        socket.close();
+      };
+      
+      socketRef.current = socket;
+    };
+
+    connect();
+
+    return () => {
+      if (socket) socket.close();
+      clearTimeout(reconnectTimeout);
+    };
   }, []);
 
   useEffect(() => {
