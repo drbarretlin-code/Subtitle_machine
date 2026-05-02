@@ -11,7 +11,7 @@ load_dotenv()
 
 # --- 配置 ---
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("VITE_GEMINI_KEY")
-WHISPER_MODEL_SIZE = "base"  # 可改為 'large-v3' 以提升精度
+WHISPER_MODEL_SIZE = "small"  # 已由 'base' 改為 'small' 以提升辨識率
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
 
@@ -44,15 +44,15 @@ class SubtitleEngine:
             return raw_text
 
         prompt = (
-            f"你是一位專業的即時字幕翻譯與校對專家。\n"
+            f"你是一位極致專業的『即時直播字幕官』。\n"
             f"當前偵測語系: {language}\n"
             f"目標輸出語系: {target_lang}\n\n"
-            f"任務:\n"
-            f"1. 修正原始辨識錯誤 (ASR 錯誤)。\n"
-            f"2. 將內容翻譯/優化為「{target_lang}」。\n"
-            f"3. 語氣要自然、流暢、簡潔，適合做為直播字幕。\n"
-            f"4. 僅輸出修正或翻譯後的內容，不要任何解釋。\n\n"
-            f"原始文字: {raw_text}"
+            f"任務：\n"
+            f"1. 修正語音辨識 (ASR) 可能產生的破碎文字或同音異字錯誤。\n"
+            f"2. 將其轉化為極其自然、地道的「{target_lang}」字幕。\n"
+            f"3. 輸出必須簡潔 (Concise)，移除口語贅詞 (如: 嗯、那個、然後)。\n"
+            f"4. **嚴禁解釋**，僅輸出最終字幕文字。\n\n"
+            f"待處理文字: {raw_text}"
         )
 
         try:
@@ -106,8 +106,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 audio_tensor = torch.from_numpy(full_audio)
                 speech_timestamps = get_speech_timestamps(audio_tensor, vad_model, sampling_rate=16000)
                 
-                # 觸發辨識
-                if len(audio_buffer) >= 15: # 約 2 秒
+                # 觸發辨識 (增加到約 3.5 - 4 秒，提供更多上下文以提升準確度)
+                if len(audio_buffer) >= 25: 
                     raw_audio = np.concatenate(audio_buffer)
                     print(f"正在辨識音訊 (長度: {len(raw_audio)} samples)...")
                     

@@ -91,18 +91,24 @@ function App() {
       <header className="header">
         <div className="controls">
           <select value={inputLang} onChange={(e) => setInputLang(e.target.value)}>
-            <option value="auto">自動辨識</option>
-            <option value="zh">中文</option>
-            <option value="en">英文</option>
-            <option value="ja">日文</option>
-            <option value="ko">韓文</option>
-            <option value="th">泰文</option>
+            <option value="auto">🎤 自動辨識</option>
+            <option value="zh">繁體中文</option>
+            <option value="en">英文 (English)</option>
+            <option value="ja">日文 (日本語)</option>
+            <option value="ko">韓文 (한국어)</option>
+            <option value="th">泰文 (ไทย)</option>
+            <option value="id">印尼文 (Bahasa Indonesia)</option>
+            <option value="vi">越南文 (Tiếng Việt)</option>
           </select>
           <span>→</span>
           <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
             <option value="繁體中文">繁體中文</option>
             <option value="英文">英文</option>
             <option value="日文">日文</option>
+            <option value="韓文">韓文</option>
+            <option value="泰文">泰文</option>
+            <option value="印尼文">印尼文</option>
+            <option value="越南文">越南文</option>
           </select>
         </div>
         <div className="status-badge">{status}</div>
@@ -111,7 +117,7 @@ function App() {
       <main className="subtitle-viewport" ref={scrollRef}>
         <div className="subtitle-list-horizontal">
           {subtitles.length === 0 && (
-            <div className="empty-state">等待說話...</div>
+            <div className="empty-state">等待語音輸入...</div>
           )}
           {subtitles.map((sub, index) => (
             <div key={index} className="subtitle-item-inline">
