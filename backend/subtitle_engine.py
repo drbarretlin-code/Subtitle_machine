@@ -18,10 +18,15 @@ class SubtitleEngine:
             return raw_text # 無金鑰時回傳原始文字
 
         prompt = (
+            f"You are a professional real-time subtitle translator.\n"
             f"Context: {context}\n"
-            f"Current ASR Text: {raw_text}\n"
-            f"Task: Translate 'Current ASR Text' into natural {target_lang}. Use 'Context' to fix any ASR errors.\n"
-            f"Rules: Output ONLY the translation. No meta-talk."
+            f"Raw ASR: {raw_text}\n"
+            f"Target: {target_lang}\n\n"
+            f"Instructions:\n"
+            f"1. Fix ASR errors in 'Raw ASR' using 'Context'.\n"
+            f"2. Translate the result into natural {target_lang}.\n"
+            f"3. Output ONLY the translation. No preamble, no quotes.\n"
+            f"4. If 'Raw ASR' is noise or background sound, return an empty string."
         )
 
         try:

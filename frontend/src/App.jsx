@@ -121,6 +121,9 @@ function App() {
             <option value="en">English</option>
             <option value="ja">日本語</option>
             <option value="ko">한국어</option>
+            <option value="th">泰語 (ไทย)</option>
+            <option value="tl">菲律賓語 (Tagalog)</option>
+            <option value="vi">越南語 (Tiếng Việt)</option>
           </select>
           <span style={{color: 'rgba(255,255,255,0.3)', fontSize: '12px'}}>➔</span>
           <select value={targetLang} onChange={(e) => setTargetLang(e.target.value)}>
@@ -128,6 +131,9 @@ function App() {
             <option value="英文">英文</option>
             <option value="日文">日文</option>
             <option value="韓文">韓文</option>
+            <option value="泰文">泰文</option>
+            <option value="菲律賓文">菲律賓文</option>
+            <option value="越南文">越南文</option>
           </select>
         </div>
         <div className="status-badge">
