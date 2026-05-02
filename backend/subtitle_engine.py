@@ -33,16 +33,19 @@ class SubtitleEngine:
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-1.5-flash')
             
+            print(f"🔮 發送翻譯請求 (Target: {target_lang})...")
             response = await asyncio.to_thread(
                 model.generate_content, 
                 prompt
             )
             
             refined_text = response.text.strip()
+            print(f"✨ Gemini 回傳: [{refined_text}]")
             
             # 安全檢查：避免 AI 回傳提示詞
             forbidden = ["ASR", "Text:", "Task:", "翻譯", "字幕"]
             if any(kw in refined_text for kw in forbidden):
+                print("⚠️ 偵測到無效翻譯內容，回退至原始文字")
                 return raw_text
                 
             return refined_text
