@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+faster-whisper
+onnxruntime-gpu
+google-generativeai
+numpy
+soundfile
+python-multipart
+python-dotenv
+torch
+torchaudio
