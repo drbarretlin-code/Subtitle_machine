@@ -23,3 +23,4 @@ echo "💡 提示：預設網址通常為 http://localhost:5173"
 # 4. 自動開啟網頁 (可選)
 sleep 2
 open "http://localhost:5173"
+
