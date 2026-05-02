@@ -1,7 +1,7 @@
 fastapi
 uvicorn
 faster-whisper
-onnxruntime-gpu
+onnxruntime
 google-generativeai
 numpy
 soundfile

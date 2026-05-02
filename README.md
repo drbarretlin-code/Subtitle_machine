@@ -35,7 +35,7 @@
 
 1. **後端套件**:
    ```bash
-   pip install -r requirements.txt
+   pip3 install -r requirements.txt
    ```
 
 2. **前端套件**:
@@ -52,7 +52,7 @@
 
 ### 視窗 A (啟動後端引擎)
 ```bash
-python server.py
+python3 server.py
 ```
 *看到 「WebSocket 已連接」 或 「正在載入模型」 即代表成功。*
 
