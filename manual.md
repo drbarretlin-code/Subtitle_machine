@@ -1,89 +1,101 @@
-# AI 多語系即時字幕機 - 操作使用手冊 (2026 最終修訂版)
+# 🌌 Antigravity AI 字幕機 (Subtitle Machine) 操作手冊
 
-本手冊提供「AI 多語系即時字幕機」的完整操作流程、技術細節與故障排除指南。
-
----
-
-## 1. 產品概覽
-本系統是一款基於 `faster-whisper` 與 `Google Gemini 1.5 Flash` 的即時語音辨識與校正工具。
-- **核心功能**: 即時語音轉文字 (ASR)、多國口音校正與翻譯 (LLM Translation)、即時字幕展示 (WebSocket UI)。
-- **支援語系**: 繁中、英文、日文、韓文、泰文 (Thai)、菲律賓文 (Tagalog)、越南文 (Vietnamese) 等。
-- **介面尺寸**: 固定 840 x 240 (適合水平滾動字幕)。
+本手冊旨在引導使用者從零開始配置並運行 AI 字幕機。本系統採用最新的 **LPU (Language Processing Unit) 加速技術** 與 **混合式 AI 架構**，專為極速轉譯設計。
 
 ---
 
-## 2. 環境與系統要求
-- **作業系統**: macOS (推薦), Windows 10/11。
-- **必備軟體**: 
-  - Python 3.12+ (macOS 請使用 `python3`)
-  - Node.js 18+
-- **硬體建議**: 
-  - 建議具備穩定網路連線以調用 Gemini API。
-  - 模型預設為 `small` 精度模式，初次運行需下載約 500MB 模型。
+## 1. 核心設計邏輯 (How it works)
+
+本系統不同於傳統字幕軟體，其設計核心在於「極速」與「精準」的完美平衡：
+
+1.  **混合式辨識引擎 (Hybrid ASR)**：優先使用 **Groq Cloud (Whisper-large-v3)** 進行毫秒級語音轉文字；若雲端超額或斷線，系統會自動降級至 **本機 Whisper (Faster-Whisper)** 運作，確保服務不中斷。
+2.  **雙階段即時更新 (Two-Phase Update)**：當您說話時，系統會先立即彈出「原始辨識文字」，隨後在 0.2 秒內由 **Llama 3 / Gemini** 完成「語境校正與翻譯」並原地覆蓋，實現零延遲感。
+3.  **資源監測器**：介面內建即時配額監控，使用者可隨時掌握金鑰健康狀態與速率限制 (RPM)。
 
 ---
 
-## 3. 安裝與設定 (初次使用)
+## 2. 系統要求與環境準備
 
-### 3.1 基礎環境初始化 (macOS)
-1. **執行 SSL 憑證修復**:
-   在終端機執行：`/Applications/Python\ 3.14/Install\ Certificates.command`
-2. **安裝後端依賴**:
-   ```bash
-   cd /Users/barretlin/Antigravity/Subtitle＿machine
-   pip3 install -r requirements.txt
-   ```
-3. **安裝前端依賴**:
-   ```bash
-   cd frontend && npm install && cd ..
-   ```
+### 適用作業系統
+- **macOS (推薦)**: 支援最完美的透明視窗與音訊路由。
+- **Windows 10/11**: 支援完整功能，建議使用 Chrome 瀏覽器。
 
-### 3.2 API 金鑰設定
-1. 在專案根目錄建立 `.env` 檔案。
-2. 填入：`GOOGLE_API_KEYS=您的金鑰內容` (多組請用逗點隔開)。
+### 必要軟體環境
+1.  **Python 3.9+**: 負責處理後端辨識與翻譯邏輯。
+2.  **Node.js 18+**: 負責執行前端字幕展示介面。
+3.  **FFmpeg**: 處理音訊串流的關鍵工具。
+4.  **音訊路由工具 (重要)**:
+    - **macOS**: 必須安裝 [BlackHole (2ch)](https://existential.audio/blackhole/)，用以將系統音訊導入口語辨識引擎。
+    - **Windows**: 使用系統預設的「立體聲混音 (Stereo Mix)」即可。
 
 ---
 
-## 4. 啟動流程 (自動化模式 - 推薦)
+## 3. 零基礎安裝步驟
 
-### macOS 一鍵啟動
-1. 開啟終端機，進入專案目錄：
-   ```bash
-   cd /Users/barretlin/Antigravity/Subtitle＿machine
-   ```
-2. 執行啟動腳本：
-   ```bash
-   ./start.sh
-   ```
-3. 腳本將自動：
-   - 開啟新視窗啟動 **AI 辨識引擎** (後端)。
-   - 開啟新視窗啟動 **字幕展示介面** (前端)。
-   - 自動開啟瀏覽器並跳轉至字幕視窗。
+### Step 1: 取得金鑰 (API Keys)
+本系統需要以下金鑰方可運作：
+1.  **Groq API Key**: 前往 [Groq Console](https://console.groq.com/) 免費申請 (轉譯速度之魂)。
+2.  **Google Gemini API Key**: 前往 [Google AI Studio](https://aistudio.google.com/) 申請 (高品質翻譯備援)。
 
----
+### Step 2: 專案初始化
+1.  解壓縮專案資料夾後，進入該目錄。
+2.  **安裝 Python 依賴**:
+    ```bash
+    pip3 install -r requirements.txt
+    ```
+3.  **安裝前端依賴**:
+    ```bash
+    cd frontend && npm install && cd ..
+    ```
 
-## 5. 使用操作指南
-1. **選擇語系**: 
-   - 左側選單選擇「輸入語系」(即您說話的語言)。
-   - 右側選單選擇「目標語系」(即您希望字幕顯示的語言)。
-2. **開始錄音**: 點擊介面右下方的「START」按鈕。
-3. **字幕查看**: 字幕將由左至右平行滾動顯示。
-4. **停止錄音**: 再次點擊按鈕即可停止。
-
----
-
-## 6. 故障排除 (FAQ)
-
-| 錯誤現象 | 可能原因 | 解決方法 |
-| :--- | :--- | :--- |
-| `zsh: command not found: python` | macOS 指令集差異 | 請使用 `python3` 或 `pip3` |
-| `SSL: CERTIFICATE_VERIFY_FAILED` | macOS SSL 憑證未初始化 | 執行 `Install Certificates.command` |
-| `ERROR: onnxruntime-gpu` | Mac 不支援 GPU 套件 | 已修正，請重新執行 `pip3 install -r requirements.txt` |
-| 沒有字幕出現 | 瀏覽器錄音權限/WebSocket | 1. 允許瀏覽器麥克風。 2. 安裝 `websockets` 套件。 |
+### Step 3: 配置環境變數
+在專案根目錄找到 `.env` 檔案（若無則新增），填入以下內容：
+```env
+# 格式：GOOGLE_API_KEYS=金鑰1,金鑰2 (支援多組輪替)
+GOOGLE_API_KEYS=YOUR_GEMINI_KEY_HERE
+GROQ_API_KEYS=YOUR_GROQ_KEY_HERE
+```
 
 ---
 
-## 7. 維護與更新
-- **更新專案**: 執行 `git pull`。
-- **模型調校**: 可在 `server.py` 修改 `WHISPER_MODEL_SIZE` (若電腦卡頓可改回 `base`)。
-- **安全性**: 嚴禁將 `.env` 檔案上傳至 GitHub。
+## 4. 不同作業系統的音訊設定
+
+### macOS (BlackHole 設定)
+1.  開啟「音訊 MIDI 設定」應用程式。
+2.  點擊左下角 `+`，建立「多重輸出裝置」。
+3.  勾選「MacBook 揚聲器」與「BlackHole 2ch」。
+4.  將系統「輸出裝置」設為此「多重輸出裝置」。
+5.  在字幕機介面中，確保系統權限允許存取麥克風（實際上是抓取 BlackHole 的內容）。
+
+### Windows (立體聲混音設定)
+1.  右鍵點擊工作列音量圖示 ->「聲音」。
+2.  在「錄製」分頁中，右鍵點擊空白處勾選「顯示停用的裝置」。
+3.  啟用「立體聲混音 (Stereo Mix)」，並將其設為預設裝置。
+
+---
+
+## 5. 一鍵啟動指南 (Quick Start)
+
+為了您的便利，我們將所有複雜指令打包成了自動化腳本。請根據您的系統，**直接複製並貼上**以下內容到您的終端機：
+
+### 🍎 macOS 使用者
+請複製以下整段指令並貼到終端機：
+```bash
+cd "/Users/barretlin/Antigravity/Subtitle＿machine" && chmod +x start.sh && ./start.sh
+```
+
+### 🪟 Windows 使用者
+請開啟命令提示字元 (CMD) 並執行：
+```cmd
+cd /d "C:\您的路徑\Subtitle_machine" && start.bat
+```
+
+---
+
+## 6. 系統限制與注意事項 (User Awareness)
+- **免費金鑰限制**: Groq ASR 每分鐘限制約 20 次請求。若短時間內發話過於頻繁，監控燈號會變為紅色，系統將自動暫時切換為「本機辨識」。
+- **網路延遲**: 翻譯速度取決於您與 API 伺服器的連線速度，建議在穩定的網路環境下使用。
+- **雜訊過濾**: 系統已內建能量偵測，環境音太吵雜時會自動過濾，若發現不跳字幕，請確認說話音量。
+
+---
+**Antigravity 團隊製作 | 2026.05**
