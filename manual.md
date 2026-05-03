@@ -21,102 +21,75 @@
 - **Windows 10/11**: 支援完整功能，建議使用 Chrome 瀏覽器。
 
 ### 必要軟體環境
-1.  **Python 3.9+**: 負責處理後端辨識與翻譯邏輯。
-2.  **Node.js 18+**: 負責執行前端字幕展示介面。
-3.  **FFmpeg**: 處理音訊串流的關鍵工具。
-4.  **音訊路由工具 (重要)**:
-    - **macOS**: 必須安裝 [BlackHole (2ch)](https://existential.audio/blackhole/)，用以將系統音訊導入口語辨識引擎。
-    - **Windows**: 使用系統預設的「立體聲混音 (Stereo Mix)」即可。
+- **Python 3.9+** / **Node.js 18+** / **FFmpeg**
+- **音訊路由工具**: macOS 需安裝 [BlackHole (2ch)](https://existential.audio/blackhole/)。
 
 ---
 
-## 3. 零基礎安裝步驟
+## 3. 零基礎「一鍵式」安裝步驟
 
-### Step 1: 下載與準備
-1.  **取得程式碼**: 從 GitHub 下載 ZIP 壓縮檔並解壓縮，或使用 `git clone` 取得專案。
+### Step 1: 下載與安全性警告
+1.  **取得程式碼**: 從 GitHub 下載 ZIP 並解壓縮。
 2.  **⚠️ 重要安全性提示 (必讀)**:
     > [!CAUTION]
-    > **自備環境**: 本系統非單一執行檔，您**必須**依照手冊第 2 點自行在電腦中安裝 Python 與 Node.js 環境。
-    >
-    > **自備金鑰**: 您**必須**自行申請並在 `.env` 中填寫您個人的 API 金鑰。請勿將包含金鑰的檔案傳給他人，否則您的 API 額度會被他人耗盡，甚至造成個資外流。
+    > **自備環境與金鑰**: 本系統非單一執行檔，您**必須**安裝 Python/Node 環境。同時，請務必填寫您**個人的 API 金鑰**於 `.env` 中，嚴禁將包含金鑰的檔案傳給他人。
 
-### Step 2: 專案初始化
-1.  開啟終端機 (Terminal / CMD)，進入解壓縮後的專案目錄。
-2.  **安裝 Python 依賴套件**:
-    ```bash
-    pip3 install -r requirements.txt
-    ```
-3.  **安裝前端依賴**:
-    ```bash
-    cd frontend && npm install && cd ..
-    ```
+### Step 2: 一鍵安裝環境 (自動化)
+請根據您的作業系統，複製以下指令並貼入終端機執行：
 
-### Step 3: 配置環境變數
-在專案根目錄找到 `.env` 檔案（若無則新增），填入以下內容：
+- **🍎 macOS 使用者**:
+  ```bash
+  cd "/Users/barretlin/Antigravity/Subtitle＿machine" && chmod +x setup.sh && ./setup.sh
+  ```
+- **🪟 Windows 使用者**:
+  ```cmd
+  cd /d "C:\您的路徑\Subtitle_machine" && setup.bat
+  ```
+
+---
+
+## 4. 配置金鑰 (API Keys)
+
+在專案目錄下找到 `.env` 檔案（若無則新增），填入您的金鑰：
 ```env
-# 格式：GOOGLE_API_KEYS=金鑰1,金鑰2 (支援多組輪替)
-GOOGLE_API_KEYS=YOUR_GEMINI_KEY_HERE
-GROQ_API_KEYS=YOUR_GROQ_KEY_HERE
+GOOGLE_API_KEYS=您的Gemini金鑰
+GROQ_API_KEYS=您的Groq金鑰
 ```
+*   **Groq 金鑰**: [Groq Console](https://console.groq.com/) (轉譯速度核心)。
+*   **Gemini 金鑰**: [Google AI Studio](https://aistudio.google.com/) (品質校正備援)。
 
 ---
 
-## 4. 不同作業系統的音訊設定
+## 5. 一鍵啟動系統 (Quick Start)
 
-### macOS (BlackHole 設定)
-1.  開啟「音訊 MIDI 設定」應用程式。
-2.  點擊左下角 `+`，建立「多重輸出裝置」。
-3.  勾選「MacBook 揚聲器」與「BlackHole 2ch」。
-4.  將系統「輸出裝置」設為此「多重輸出裝置」。
-5.  在字幕機介面中，確保系統權限允許存取麥克風（實際上是抓取 BlackHole 的內容）。
+安裝完成後，未來每次使用只需執行以下單一指令：
 
-### Windows (立體聲混音設定)
-1.  右鍵點擊工作列音量圖示 ->「聲音」。
-2.  在「錄製」分頁中，右鍵點擊空白處勾選「顯示停用的裝置」。
-3.  啟用「立體聲混音 (Stereo Mix)」，並將其設為預設裝置。
-
----
-
-## 5. 一鍵啟動指南 (Quick Start)
-
-為了您的便利，我們將所有複雜指令打包成了自動化腳本。請根據您的系統，**直接複製並貼上**以下內容到您的終端機：
-
-### 🍎 macOS 使用者
-請複製以下整段指令並貼到終端機：
-```bash
-cd "/Users/barretlin/Antigravity/Subtitle＿machine" && chmod +x start.sh && ./start.sh
-```
-
-### 🪟 Windows 使用者
-請開啟命令提示字元 (CMD) 並執行：
-```cmd
-cd /d "C:\您的路徑\Subtitle_machine" && start.bat
-```
+- **🍎 macOS 使用者**:
+  ```bash
+  cd "/Users/barretlin/Antigravity/Subtitle＿machine" && ./start.sh
+  ```
+- **🪟 Windows 使用者**:
+  ```cmd
+  cd /d "C:\您的路徑\Subtitle_machine" && start.bat
+  ```
 
 ---
 
-## 6. 系統限制與注意事項 (User Awareness)
-- **免費金鑰限制**: Groq ASR 每分鐘限制約 20 次請求。若短時間內發話過於頻繁，監控燈號會變為紅色，系統將自動暫時切換為「本機辨識」。
-- **網路延遲**: 翻譯速度取決於您與 API 伺服器的連線速度，建議在穩定的網路環境下使用。
-- **雜訊過濾**: 系統已內建能量偵測，環境音太吵雜時會自動過濾，若發現不跳字幕，請確認說話音量。
+## 6. 開發者工具：一鍵打包發布 (For Developers)
+
+若您需要將此專案「乾淨地」分享給他人，請執行以下指令。腳本會自動移除敏感金鑰與冗餘檔案，生成 `Subtitle_Machine_v1.0.zip`：
+
+- **🍎 macOS 使用者**:
+  ```bash
+  cd "/Users/barretlin/Antigravity/Subtitle＿machine" && ./package.sh
+  ```
+- **🪟 Windows 使用者**: (請手動點擊目錄下的 `package.sh` 或使用 Git Bash 執行)
 
 ---
 
-## 7. 開發者工具：專案打包發布 (For Developers)
-
-若您需要將此專案打包分享給其他使用者，請使用內建的自動化打包工具，這能確保發布的檔案中不含您的私密金鑰 (API Keys)。
-
-### 打包步驟
-1.  確保您位於專案根目錄。
-2.  執行以下指令：
-    ```bash
-    ./package.sh
-    ```
-3.  **腳本功能**:
-    - 自動剔除 `.env` (包含您的金鑰)。
-    - 自動剔除 `node_modules` (減少檔案體積)。
-    - 自動剔除 `.git` 與編譯暫存檔。
-4.  執行完成後，您會在目錄下看到一個 `Subtitle_Machine_v1.0.zip`，此檔案即可安全分發。
+## 7. 系統限制與注意事項
+- **免費限流**: 若發話過頻繁導致監控燈號變紅 (429)，系統將暫時切換為本機辨識。
+- **雜訊過濾**: 內建能量偵測，若發現不跳字幕，請確認說話音量。
 
 ---
-**Antigravity 團隊製作 | 2026.05**
+**Dr. Barret Lin 製作 | 2026.05**
