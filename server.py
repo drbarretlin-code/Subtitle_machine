@@ -7,6 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from backend.audio_engine import audio_engine
 from backend.subtitle_engine import subtitle_engine
 from backend.chunker import VADChunker
+from backend.key_manager import key_manager
 
 app = FastAPI()
 
