@@ -60,25 +60,20 @@ class SubtitleEngine:
         if not raw_text.strip():
             return ""
 
-        # 過濾常見的 ASR 幻覺 (雜訊誤判)
+        # 過濾常見的 ASR 幻覺 (強力過濾)
+        raw_clean = raw_text.strip().lower().replace(" ", "").replace(".", "").replace(",", "")
         hallucinations = [
-            "謝謝大家", "Thank you everyone", "Thanks for watching", 
-            "請訂閱", "之身祭堂", "谢谢", "Thank you.", "字幕組", 
-            "字幕由", "如有錯誤", "請多包涵"
+            "謝謝大家", "thankyoueveryone", "thanksforwatching", 
+            "請訂閱", "之身祭堂", "谢谢", "thankyou", "字幕組", 
+            "如有錯誤", "請多包涵", "歡迎收看", "大家下次見"
         ]
-        if raw_text.strip() in hallucinations:
+        if any(h in raw_clean for h in hallucinations) and len(raw_text) < 15:
             return ""
 
         prompt = (
-            f"You are a professional real-time subtitle translator.\n"
-            f"Context: {context}\n"
-            f"Raw ASR: {raw_text}\n"
-            f"Target: {target_lang}\n\n"
-            f"Instructions:\n"
-            f"1. Fix ASR errors in 'Raw ASR' using 'Context'.\n"
-            f"2. Translate the result into natural {target_lang}.\n"
-            f"3. Output ONLY the translation. No preamble, no quotes.\n"
-            f"4. If the input is nonsense, output an empty string."
+            f"Task: Translate to {target_lang}. Context: {context}\n"
+            f"Input: {raw_text}\n"
+            f"Rule: Output ONLY the translated text. NO explanations. NO prefix. NO quotes."
         )
 
         # 1. 優先嘗試 Groq (追求毫秒級回應)
