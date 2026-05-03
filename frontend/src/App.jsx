@@ -20,7 +20,9 @@ function App() {
     let reconnectTimeout;
 
     const connect = () => {
-      socket = new WebSocket('ws://localhost:8000/ws/audio');
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.hostname;
+      socket = new WebSocket(`${protocol}//${wsHost}:8000/ws/audio`);
       socket.binaryType = 'arraybuffer';
       
       socket.onopen = () => {
