@@ -20,7 +20,11 @@ osascript -e "tell application \"Terminal\" to do script \"cd '$PROJECT_DIR/fron
 echo "✅ 啟動程序已發送。請在瀏覽器中開啟終端機顯示的 URL。"
 echo "💡 提示：預設網址通常為 http://localhost:5173"
 
-# 4. 自動開啟網頁 (可選)
+# 4. 偵測區域網路 IP (便利行動裝置連線)
+LOCAL_IP=$(ipconfig getifaddr en0 || ipconfig getifaddr en1 || echo "127.0.0.1")
+echo "📱 行動裝置連線網址: http://$LOCAL_IP:5173"
+
+# 5. 自動開啟網頁
 sleep 2
 open "http://localhost:5173"
 
