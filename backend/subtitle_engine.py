@@ -32,49 +32,58 @@ class SubtitleEngine:
         try:
             genai.configure(api_key=api_key)
             
-            # 動態獲取可用模型清單 (快取機制)
+            # 1. 動態獲取清單
             if not hasattr(self, '_available_models'):
-                print("🔍 正在動態檢索可用模型清單...")
-                self._available_models = []
-                for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        # 排除一些特殊用途模型 (如 robotics, computer-use)
-                        if any(x in m.name for x in ["robotics", "computer-use", "clip"]):
-                            continue
-                        self._available_models.append(m.name)
-                print(f"✅ 發現 {len(self._available_models)} 個可用模型: {self._available_models[:3]}...")
+                print("🔍 正在檢索可用模型...")
+                self._available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+                # 優先權排序：已成功的 > Lite > Flash > 其他
+                self._last_successful_model = None
+
+            # 2. 構建嘗試清單
+            # 優先嘗試上次成功的
+            models_to_try = []
+            if hasattr(self, '_last_successful_model') and self._last_successful_model:
+                models_to_try.append(self._last_successful_model)
+            
+            # 排序：lite > flash > 其他 (lite 通常限制較寬且速度快)
+            sorted_avail = sorted(self._available_models, key=lambda x: ("lite" not in x.lower(), "flash" not in x.lower()))
+            for m in sorted_avail:
+                if m not in models_to_try:
+                    models_to_try.append(m)
 
             refined_text = None
             used_model = None
             
-            # 優先嘗試 Flash 或 Pro 字樣的模型
-            models_to_try = sorted(self._available_models, key=lambda x: ("flash" not in x, "pro" not in x))
-            
             for model_name in models_to_try:
                 try:
-                    print(f"🔮 嘗試模型: {model_name} (Target: {target_lang})...")
+                    # 避免嘗試已知不支援 TEXT 的特殊模型
+                    if any(x in model_name for x in ["tts", "robotics", "computer-use"]): continue
+                    
+                    print(f"🔮 嘗試: {model_name.replace('models/', '')}...")
                     model = genai.GenerativeModel(model_name)
                     response = await asyncio.to_thread(
                         model.generate_content, 
                         prompt,
-                        request_options={"timeout": 10}
+                        request_options={"timeout": 6} # 縮短超時
                     )
                     refined_text = response.text.strip()
                     used_model = model_name
+                    self._last_successful_model = model_name # 紀錄成功模型
                     break
                 except Exception as model_err:
-                    print(f"⚠️ 模型 {model_name} 失敗: {str(model_err)[:80]}")
+                    err_str = str(model_err)
+                    print(f"⚠️ {model_name.replace('models/', '')} 失敗: {err_str[:50]}")
+                    # 若是 Quota 問題，直接嘗試下一個
                     continue
             
             if not refined_text:
-                print("❌ 遍歷所有可用模型均失敗，請確認金鑰配額。")
                 return raw_text
 
-            print(f"✨ {used_model} 成功轉譯: [{refined_text}]")
+            print(f"✅ [{used_model.replace('models/', '')}] -> {refined_text}")
             return refined_text
             
         except Exception as e:
-            print(f"❌ SubtitleEngine 核心異常: {e}")
+            print(f"❌ SubtitleEngine 異常: {e}")
             return raw_text
 
 # 全域單例
