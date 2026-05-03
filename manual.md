@@ -32,14 +32,17 @@
 
 ## 3. 零基礎安裝步驟
 
-### Step 1: 取得金鑰 (API Keys)
-本系統需要以下金鑰方可運作：
-1.  **Groq API Key**: 前往 [Groq Console](https://console.groq.com/) 免費申請 (轉譯速度之魂)。
-2.  **Google Gemini API Key**: 前往 [Google AI Studio](https://aistudio.google.com/) 申請 (高品質翻譯備援)。
+### Step 1: 下載與準備
+1.  **取得程式碼**: 從 GitHub 下載 ZIP 壓縮檔並解壓縮，或使用 `git clone` 取得專案。
+2.  **⚠️ 重要安全性提示 (必讀)**:
+    > [!CAUTION]
+    > **自備環境**: 本系統非單一執行檔，您**必須**依照手冊第 2 點自行在電腦中安裝 Python 與 Node.js 環境。
+    >
+    > **自備金鑰**: 您**必須**自行申請並在 `.env` 中填寫您個人的 API 金鑰。請勿將包含金鑰的檔案傳給他人，否則您的 API 額度會被他人耗盡，甚至造成個資外流。
 
 ### Step 2: 專案初始化
-1.  解壓縮專案資料夾後，進入該目錄。
-2.  **安裝 Python 依賴**:
+1.  開啟終端機 (Terminal / CMD)，進入解壓縮後的專案目錄。
+2.  **安裝 Python 依賴套件**:
     ```bash
     pip3 install -r requirements.txt
     ```
