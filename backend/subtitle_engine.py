@@ -30,51 +30,53 @@ class SubtitleEngine:
         )
 
         models_to_try = [
-            'gemini-3-flash',
-            'gemini-3.1-flash-lite',
-            'gemini-2.5-flash',
-            'gemini-3.1-pro-preview',
-            'gemini-pro'
+            'gemini-1.5-flash',
+            'gemini-1.5-pro',
+            'gemini-2.0-flash-exp',
+            'gemini-pro',
+            'gemini-3-flash', # 預留未來版本
+            'gemini-1.0-pro'
         ]
 
         try:
             genai.configure(api_key=api_key)
             
-            # 尋找可用的模型
-            model = None
+            refined_text = None
+            used_model = None
+            
             for model_name in models_to_try:
                 try:
-                    temp_model = genai.GenerativeModel(model_name)
-                    # 測試性呼叫或直接指派
-                    model = temp_model
-                    break
-                except:
+                    print(f"🔮 嘗試模型: {model_name} (Target: {target_lang})...")
+                    model = genai.GenerativeModel(model_name)
+                    response = await asyncio.to_thread(
+                        model.generate_content, 
+                        prompt,
+                        # 設定較短的超時
+                        request_options={"timeout": 5}
+                    )
+                    refined_text = response.text.strip()
+                    used_model = model_name
+                    break # 成功則跳出循環
+                except Exception as model_err:
+                    print(f"⚠️ 模型 {model_name} 失敗: {str(model_err)[:100]}")
                     continue
             
-            if not model:
-                print("❌ 所有 Gemini 模型均無法初始化")
+            if not refined_text:
+                print("❌ 所有 Gemini 模型均無法產生內容，請檢查金鑰權限或網路狀態")
                 return raw_text
 
-            print(f"🔮 發送翻譯請求 (模型: {model_name}, Target: {target_lang})...")
-            response = await asyncio.to_thread(
-                model.generate_content, 
-                prompt
-            )
+            print(f"✨ {used_model} 回傳: [{refined_text}]")
             
-            refined_text = response.text.strip()
-            print(f"✨ Gemini 回傳: [{refined_text}]")
-            
-            # 安全檢查：避免 AI 回傳提示詞
+            # 安全檢查
             forbidden = ["ASR", "Text:", "Task:", "翻譯", "字幕"]
             if any(kw in refined_text for kw in forbidden):
-                print("⚠️ 偵測到無效翻譯內容，回退至原始文字")
+                print("⚠️ 偵測到無效翻譯內容")
                 return raw_text
                 
             return refined_text
+            
         except Exception as e:
-            print(f"❌ Gemini 翻譯失敗 (Key: {api_key[:8]}...): {e}")
-            if "429" in str(e):
-                key_manager.report_error(api_key, "gemini", 429)
+            print(f"❌ SubtitleEngine 核心錯誤: {e}")
             return raw_text
 
 # 全域單例
