@@ -16,16 +16,39 @@ class SubtitleEngine:
         if not api_key:
             return None
             
+        # 2026 最新推薦模型
+        groq_models = [
+            "llama-3.1-8b-instant",
+            "llama-3.3-70b-versatile",
+            "llama3-70b-8192",
+            "mixtral-8x7b-32768"
+        ]
+            
         try:
             client = Groq(api_key=api_key)
-            response = await asyncio.to_thread(
-                client.chat.completions.create,
-                messages=[{"role": "user", "content": prompt}],
-                model="llama3-8b-8192", # 極速模型
-                temperature=0.2,
-                max_tokens=256
-            )
-            return response.choices[0].message.content.strip()
+            
+            used_model = None
+            content = None
+            
+            for model_name in groq_models:
+                try:
+                    response = await asyncio.to_thread(
+                        client.chat.completions.create,
+                        messages=[{"role": "user", "content": prompt}],
+                        model=model_name,
+                        temperature=0.1,
+                        max_tokens=256,
+                        timeout=5
+                    )
+                    content = response.choices[0].message.content.strip()
+                    used_model = model_name
+                    break
+                except Exception as e:
+                    if "decommissioned" in str(e) or "not found" in str(e):
+                        continue
+                    raise e
+                    
+            return content
         except Exception as e:
             print(f"⚠️ Groq 翻譯失敗: {e}")
             if "429" in str(e):
@@ -35,6 +58,11 @@ class SubtitleEngine:
     async def refine_text(self, raw_text: str, context: str = "", target_lang: str = "繁體中文") -> str:
         """混合翻譯引擎：優先 Groq (毫秒級), 備援 Gemini (高品質)"""
         if not raw_text.strip():
+            return ""
+
+        # 過濾常見的 ASR 幻覺 (雜訊誤判)
+        hallucinations = ["謝謝大家", "Thank you everyone", "Thanks for watching", "請訂閱", "之身祭堂"]
+        if raw_text.strip() in hallucinations:
             return ""
 
         prompt = (
