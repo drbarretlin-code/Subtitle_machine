@@ -10,7 +10,7 @@ class VADChunker:
     def add_audio(self, audio_chunk: np.ndarray):
         self.buffer = np.concatenate([self.buffer, audio_chunk])
         
-    def get_next_segment(self, min_duration=5, max_duration=15):
+    def get_next_segment(self, min_duration=1.5, max_duration=4.0):
         """
         嘗試從 Buffer 中切出一段音訊。
         目前簡單實作：若滿 5 秒則切出，或達到 15 秒強制切出。

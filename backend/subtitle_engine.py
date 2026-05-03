@@ -61,7 +61,11 @@ class SubtitleEngine:
             return ""
 
         # 過濾常見的 ASR 幻覺 (雜訊誤判)
-        hallucinations = ["謝謝大家", "Thank you everyone", "Thanks for watching", "請訂閱", "之身祭堂"]
+        hallucinations = [
+            "謝謝大家", "Thank you everyone", "Thanks for watching", 
+            "請訂閱", "之身祭堂", "谢谢", "Thank you.", "字幕組", 
+            "字幕由", "如有錯誤", "請多包涵"
+        ]
         if raw_text.strip() in hallucinations:
             return ""
 
@@ -73,7 +77,8 @@ class SubtitleEngine:
             f"Instructions:\n"
             f"1. Fix ASR errors in 'Raw ASR' using 'Context'.\n"
             f"2. Translate the result into natural {target_lang}.\n"
-            f"3. Output ONLY the translation. No preamble, no quotes."
+            f"3. Output ONLY the translation. No preamble, no quotes.\n"
+            f"4. If the input is nonsense, output an empty string."
         )
 
         # 1. 優先嘗試 Groq (追求毫秒級回應)

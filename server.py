@@ -10,22 +10,32 @@ from backend.chunker import VADChunker
 
 app = FastAPI()
 
+import collections
+
 class SubtitleCoordinator:
     def __init__(self):
-        self.context_history = collections.deque(maxlen=5)
+        self.context_history = collections.deque(maxlen=3) # 縮短上下文避免干擾
 
     async def process_segment(self, websocket, audio_data, config):
+        segment_id = str(uuid.uuid4())
         try:
-            # 1. ASR 辨識
+            # 1. 第一階段：ASR 辨識 (極速)
             input_lang = None if config["inputLang"] == "auto" else config["inputLang"]
             raw_text, lang = await audio_engine.transcribe(audio_data, input_lang)
             
             if not raw_text.strip() or len(raw_text) < 2:
                 return
 
-            print(f"🎤 ASR: [{raw_text}]")
+            # 立即發送第一階段結果 (讓使用者看到文字已辨識)
+            await websocket.send_json({
+                "id": segment_id,
+                "raw": raw_text,
+                "refined": "正在翻譯...", # 狀態提示
+                "language": lang,
+                "status": "transcribing"
+            })
             
-            # 2. 翻譯與校正
+            # 2. 第二階段：翻譯與校正 (背景執行)
             context_str = " | ".join(self.context_history)
             refined_text = await subtitle_engine.refine_text(
                 raw_text, 
@@ -33,23 +43,20 @@ class SubtitleCoordinator:
                 target_lang=config["targetLang"]
             )
             
-            print(f"✨ 翻譯: [{refined_text}]")
+            # 更新上下文
+            self.context_history.append(raw_text) # 存入辨識結果作為下文參考
             
-            # 3. 更新上下文並發送
-            self.context_history.append(refined_text)
-            
+            # 發送最終結果
             await websocket.send_json({
-                "id": str(uuid.uuid4()),
+                "id": segment_id,
                 "raw": raw_text,
                 "refined": refined_text,
                 "language": lang,
-                "timestamp": asyncio.get_event_loop().time()
+                "status": "final"
             })
             
         except Exception as e:
             print(f"❌ 處理片段失敗: {e}")
-
-import collections
 
 @app.websocket("/ws/audio")
 async def websocket_endpoint(websocket: WebSocket):
