@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+websockets==13.1
+faster-whisper
+onnxruntime
+google-generativeai>=0.7.2
+python-dotenv
+torch
+numpy
+groq
+httpx
