@@ -21,8 +21,8 @@ function App() {
 
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsHost = window.location.hostname;
-      socket = new WebSocket(`${protocol}//${wsHost}:8000/ws/audio`);
+      const host = window.location.host; // Contains hostname:port
+      socket = new WebSocket(`${protocol}//${host}/ws/audio`);
       socket.binaryType = 'arraybuffer';
       
       socket.onopen = () => {
