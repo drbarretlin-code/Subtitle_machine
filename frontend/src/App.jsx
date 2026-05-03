@@ -81,7 +81,7 @@ function App() {
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [subtitles]);
 
@@ -161,12 +161,12 @@ function App() {
       </header>
 
       <main className="subtitle-viewport" ref={scrollRef}>
-        <div className="subtitle-list-horizontal">
+        <div className="subtitle-list-vertical">
           {subtitles.length === 0 && (
             <div className="empty-state">READY TO CAPTURE</div>
           )}
           {subtitles.map((sub, index) => (
-            <div key={sub.id || index} className="subtitle-item-inline">
+            <div key={sub.id || index} className="subtitle-item">
               <span className="refined-text">{sub.refined}</span>
             </div>
           ))}
