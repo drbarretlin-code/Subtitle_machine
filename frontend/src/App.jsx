@@ -13,6 +13,8 @@ function App() {
   const streamRef = useRef(null);
   const scrollRef = useRef(null);
 
+  const [apiHealth, setApiHealth] = useState(null);
+
   useEffect(() => {
     let socket;
     let reconnectTimeout;
@@ -33,6 +35,9 @@ function App() {
       socket.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
+          if (data.api_health) {
+            setApiHealth(data.api_health);
+          }
           setSubtitles(prev => {
             const index = prev.findIndex(s => s.id === data.id);
             if (index !== -1) {
@@ -154,6 +159,20 @@ function App() {
             <option value="越南文">越南文</option>
           </select>
         </div>
+
+        {apiHealth && (
+          <div className="api-monitor">
+            <div className="monitor-item">
+              <span className="dot" style={{backgroundColor: apiHealth.groq.active > 0 ? '#00ff00' : '#ff0000'}}></span>
+              Groq ASR: {apiHealth.groq.active}/{apiHealth.groq.total} ({apiHealth.limits.asr_rpm} RPM)
+            </div>
+            <div className="monitor-item">
+              <span className="dot" style={{backgroundColor: apiHealth.gemini.active > 0 ? '#00ff00' : '#ff0000'}}></span>
+              Gemini AI: {apiHealth.gemini.active}/{apiHealth.gemini.total}
+            </div>
+          </div>
+        )}
+
         <div className="status-badge">
           <div className={`status-dot ${isRecording ? 'active' : ''}`}></div>
           {status}

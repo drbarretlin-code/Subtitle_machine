@@ -78,16 +78,28 @@ select:hover {
   background: #555;
 }
 
-.status-dot.active {
-  background: var(--accent-color);
-  box-shadow: 0 0 10px var(--accent-color);
-  animation: pulse 1.5s infinite;
+.api-monitor {
+  display: flex;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.5; }
-  100% { transform: scale(1); opacity: 1; }
+.monitor-item {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: monospace;
+}
+
+.monitor-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
 .subtitle-viewport {

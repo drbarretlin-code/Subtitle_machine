@@ -52,7 +52,8 @@ class SubtitleCoordinator:
                 "raw": raw_text,
                 "refined": refined_text,
                 "language": lang,
-                "status": "final"
+                "status": "final",
+                "api_health": key_manager.get_pool_status()
             })
             
         except Exception as e:

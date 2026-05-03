@@ -87,8 +87,30 @@ class KeyManager:
                 if error_code == 429:
                     k.set_cooldown(60)
                 else:
-                    k.set_cooldown(30) # 其他錯誤短暫冷卻
+                    k.set_cooldown(30)
                 break
+
+    def get_pool_status(self) -> Dict:
+        """獲取金鑰池運作狀態"""
+        gemini_active = sum(1 for k in self.gemini_keys if k.is_available())
+        groq_active = sum(1 for k in self.groq_keys if k.is_available())
+        
+        return {
+            "gemini": {
+                "total": len(self.gemini_keys),
+                "active": gemini_active,
+                "status": "良好" if gemini_active > 0 else "耗盡/冷卻中"
+            },
+            "groq": {
+                "total": len(self.groq_keys),
+                "active": groq_active,
+                "status": "良好" if groq_active > 0 else "耗盡/冷卻中"
+            },
+            "limits": {
+                "asr_rpm": len(self.groq_keys) * 20,
+                "trans_rpm": len(self.gemini_keys) * 15 + len(self.groq_keys) * 30
+            }
+        }
 
 # 全域單例
 key_manager = KeyManager()
