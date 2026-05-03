@@ -30,10 +30,11 @@ class SubtitleEngine:
         )
 
         models_to_try = [
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-latest',
-            'gemini-pro',
-            'gemini-1.0-pro'
+            'gemini-3-flash',
+            'gemini-3.1-flash-lite',
+            'gemini-2.5-flash',
+            'gemini-3.1-pro-preview',
+            'gemini-pro'
         ]
 
         try:
