@@ -29,11 +29,32 @@ class SubtitleEngine:
             f"4. If 'Raw ASR' is noise or background sound, return an empty string."
         )
 
+        models_to_try = [
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-latest',
+            'gemini-pro',
+            'gemini-1.0-pro'
+        ]
+
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
             
-            print(f"🔮 發送翻譯請求 (Target: {target_lang})...")
+            # 尋找可用的模型
+            model = None
+            for model_name in models_to_try:
+                try:
+                    temp_model = genai.GenerativeModel(model_name)
+                    # 測試性呼叫或直接指派
+                    model = temp_model
+                    break
+                except:
+                    continue
+            
+            if not model:
+                print("❌ 所有 Gemini 模型均無法初始化")
+                return raw_text
+
+            print(f"🔮 發送翻譯請求 (模型: {model_name}, Target: {target_lang})...")
             response = await asyncio.to_thread(
                 model.generate_content, 
                 prompt
