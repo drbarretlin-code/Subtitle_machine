@@ -29,20 +29,26 @@ class SubtitleEngine:
             f"4. If 'Raw ASR' is noise or background sound, return an empty string."
         )
 
-        models_to_try = [
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
-            'gemini-2.0-flash-exp',
-            'gemini-pro',
-            'gemini-3-flash', # 預留未來版本
-            'gemini-1.0-pro'
-        ]
-
         try:
             genai.configure(api_key=api_key)
             
+            # 動態獲取可用模型清單 (快取機制)
+            if not hasattr(self, '_available_models'):
+                print("🔍 正在動態檢索可用模型清單...")
+                self._available_models = []
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        # 排除一些特殊用途模型 (如 robotics, computer-use)
+                        if any(x in m.name for x in ["robotics", "computer-use", "clip"]):
+                            continue
+                        self._available_models.append(m.name)
+                print(f"✅ 發現 {len(self._available_models)} 個可用模型: {self._available_models[:3]}...")
+
             refined_text = None
             used_model = None
+            
+            # 優先嘗試 Flash 或 Pro 字樣的模型
+            models_to_try = sorted(self._available_models, key=lambda x: ("flash" not in x, "pro" not in x))
             
             for model_name in models_to_try:
                 try:
@@ -51,32 +57,24 @@ class SubtitleEngine:
                     response = await asyncio.to_thread(
                         model.generate_content, 
                         prompt,
-                        # 設定較短的超時
-                        request_options={"timeout": 5}
+                        request_options={"timeout": 10}
                     )
                     refined_text = response.text.strip()
                     used_model = model_name
-                    break # 成功則跳出循環
+                    break
                 except Exception as model_err:
-                    print(f"⚠️ 模型 {model_name} 失敗: {str(model_err)[:100]}")
+                    print(f"⚠️ 模型 {model_name} 失敗: {str(model_err)[:80]}")
                     continue
             
             if not refined_text:
-                print("❌ 所有 Gemini 模型均無法產生內容，請檢查金鑰權限或網路狀態")
+                print("❌ 遍歷所有可用模型均失敗，請確認金鑰配額。")
                 return raw_text
 
-            print(f"✨ {used_model} 回傳: [{refined_text}]")
-            
-            # 安全檢查
-            forbidden = ["ASR", "Text:", "Task:", "翻譯", "字幕"]
-            if any(kw in refined_text for kw in forbidden):
-                print("⚠️ 偵測到無效翻譯內容")
-                return raw_text
-                
+            print(f"✨ {used_model} 成功轉譯: [{refined_text}]")
             return refined_text
             
         except Exception as e:
-            print(f"❌ SubtitleEngine 核心錯誤: {e}")
+            print(f"❌ SubtitleEngine 核心異常: {e}")
             return raw_text
 
 # 全域單例
