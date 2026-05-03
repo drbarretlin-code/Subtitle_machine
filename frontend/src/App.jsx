@@ -134,6 +134,13 @@ function App() {
     setStatus('已停止');
   };
 
+  const clearSubtitles = () => {
+    setSubtitles([]);
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ type: 'clear' }));
+    }
+  };
+
   return (
     <div className="container">
       <header className="header">
@@ -193,12 +200,17 @@ function App() {
       </main>
 
       <footer className="footer">
-        <button 
-          className={`record-btn ${isRecording ? 'recording' : ''}`}
-          onClick={isRecording ? stopRecording : startRecording}
-        >
-          {isRecording ? 'STOP' : 'START SESSION'}
-        </button>
+        <div style={{display: 'flex', gap: '12px'}}>
+          <button className="clear-btn" onClick={clearSubtitles}>
+            CLEAR
+          </button>
+          <button 
+            className={`record-btn ${isRecording ? 'recording' : ''}`}
+            onClick={isRecording ? stopRecording : startRecording}
+          >
+            {isRecording ? 'STOP' : 'START SESSION'}
+          </button>
+        </div>
       </footer>
     </div>
   );

@@ -80,6 +80,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 data = json.loads(message["text"])
                 if data.get("type") == "config":
                     current_config.update(data)
+                elif data.get("type") == "clear":
+                    coordinator.context_history.clear()
+                    print("🧹 已清除上下文歷史紀錄")
                 continue
             
             if "bytes" in message:
